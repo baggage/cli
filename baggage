@@ -1,0 +1,130 @@
+#!/bin/bash
+
+# TODO
+# * better logging
+# * support curl and wget
+# * configurable curl/wget arguments
+# * better usage
+
+Baggage()
+{
+
+  new()
+  {
+    if [ -z "$BAGGAGE_CONF" ]; then
+      export BAGGAGE_CONF="$HOME/.baggage"
+    fi
+
+    if [ -r "$BAGGAGE_CONF" ]; then
+      source "$BAGGAGE_CONF"
+    fi
+
+    if [ -z "$BAGGAGE_HOST" ]; then
+      export BAGGAGE_HOST="api.baggage.io"
+    fi
+
+    if [ -z "$BAGGAGE_PROTO" ]; then
+      export BAGGAGE_PROTO="https"
+    fi
+
+    if [ -z "$BAGGAGE_PORT" ]; then
+      export BAGGAGE_PORT="443"
+    fi
+  }
+
+  id()
+  {
+    echo $BAGGAGE_ID
+  }
+
+  email_token()
+  {
+    echo $BAGGAGE_EMAIL_TOKEN
+  }
+
+  admin_token()
+  {
+    echo $BAGGAGE_ADMIN_TOKEN
+  }
+  
+  call()
+  {
+    curl -is -H 'Accept: text/plain' "${BAGGAGE_PROTO}://${BAGGAGE_HOST}:${BAGGAGE_PORT}/${1}"
+  }
+
+  subscribe()
+  {
+    email="$1"
+    call "subscribe/${email}"
+  }
+
+  stats()
+  {
+    call "stats/$(id)?token=$(admin_token)"
+  }
+
+  rotate()
+  {
+    call "rotate/$(id)?token=$(admin_token)"
+  }
+
+  unsubscribe()
+  {
+    call "unsubscribe/$(id)?token=$(admin_token)"
+  }
+
+  send()
+  {
+    subject=""
+    from=""
+    body=""
+
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        -s|--subject) shift; subject="$1";;
+        -f|--from) shift; from="$1";;
+        *) body="$@"; break;;
+      esac
+      shift
+    done
+
+    call_command="send/$(id)?token=$(email_token)"
+
+    if [ -n "$subject" ]; then
+      call_command="${call_command}&subject=${subject}"
+    fi
+
+    if [ -n "$from" ]; then
+      call_command="${call_command}&from=${from}"
+    fi
+
+    if [ -n "$body" ]; then
+      # TODO url encode
+      call "${call_command}&body=${body}"
+    fi
+  }
+
+  ping()
+  {
+    call "ping"
+  }
+
+  usage()
+  {
+    echo "Error: $1"
+  }
+}
+
+Baggage;new
+
+command=$1; shift
+
+case "$command" in
+  'subscribe') Baggage;subscribe $@;;
+  'stats') Baggage;stats $@;;
+  'rotate') Baggage;rotate $@;;
+  'unsubscribe') Baggage;unsubscribe $@;;
+  'send') Baggage;send $@;;
+  'ping') Baggage;ping $@;;
+  *) Baggage;usage "unknown command";;
+esac
