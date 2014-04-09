@@ -1,10 +1,35 @@
 #!/bin/bash
 
-# TODO
-# * better logging
-# * support curl and wget
-# * configurable curl/wget arguments
-# * better usage
+trap "exit 1" TERM
+export TOP_PID=$$
+
+Helpers()
+{
+  fatal()
+  {
+    echo "$1" >&2
+    exit 1
+  }
+
+  # From http://stackoverflow.com/questions/296536/urlencode-from-a-bash-script
+  rawurlencode() {
+    local string="${1}"
+    local strlen=${#string}
+    local encoded=""
+
+    for (( pos=0 ; pos<strlen ; pos++ )); do
+       c=${string:$pos:1}
+       case "$c" in
+          [-_.~a-zA-Z0-9] ) o="${c}" ;;
+          * )               printf -v o '%%%02x' "'$c"
+       esac
+       encoded+="${o}"
+    done
+    echo "${encoded}"    # You can either set a return variable (FASTER) 
+    REPLY="${encoded}"   #+or echo the result (EASIER)... or both... :p
+  }
+}
+
 
 Baggage()
 {
@@ -28,8 +53,38 @@ Baggage()
     fi
 
     if [ -z "$BAGGAGE_PORT" ]; then
-      export BAGGAGE_PORT="443"
+      if [ "$BAGGAGE_PROTO" = "http" ]; then
+        export BAGGAGE_PORT="80"
+      else
+        export BAGGAGE_PORT="443"
+      fi
     fi
+
+    if [ -z "$BAGGAGE_CURL_OPTS" ]; then
+      export BAGGAGE_CURL_OPTS="-s"
+    fi
+
+    if [ -z "$BAGGAGE_WGET_OPTS" ]; then
+      export BAGGAGE_WGET_OPTS="-O - -q"
+    fi
+
+    if [ -z "$BAGGAGE_HTTP_COMMAND" ]; then
+      export COMMAND=$(which curl)
+      if [ $? -eq 0 ]; then
+        export COMMAND_NAME="curl"
+      else
+        export COMMAND=$(which wget)
+        if $? -eq 0 ]; then
+          export COMMAND_NAME="wget"
+        else
+          Helpers;fatal "Please install curl or wget"
+        fi
+      fi
+    else
+      export COMMAND="$BAGGAGE_HTTP_COMMAND"
+      export COMMAND_NAME="$BAGGAGE_HTTP_COMMAND_NAME"
+    fi
+
   }
 
   id()
@@ -49,7 +104,14 @@ Baggage()
   
   call()
   {
-    curl -is -H 'Accept: text/plain' "${BAGGAGE_PROTO}://${BAGGAGE_HOST}:${BAGGAGE_PORT}/${1}"
+    URL="${BAGGAGE_PROTO}://${BAGGAGE_HOST}:${BAGGAGE_PORT}/${1}"
+    if [ "$COMMAND_NAME" = "curl" ]; then
+      $COMMAND $BAGGAGE_CURL_OPTS -H 'Accept: text/plain' "$URL"
+    elif [ "$COMMAND_NAME" = "wget" ]; then
+      $COMMAND $BAGGAGE_WGET_OPTS --header='Accept: text/plain' "$URL"
+    else
+      $COMMAND $BAGGAGE_HTTP_COMMAND_OPTS "$URL"
+    fi
   }
 
   subscribe()
@@ -75,31 +137,29 @@ Baggage()
 
   send()
   {
-    subject=""
+    subject=$(Helpers;rawurlencode "$1"); shift
     from=""
     body=""
 
+    if [ -z "$subject" ]; then
+      fatal "Subject is required"
+    fi
+
     while [ $# -gt 0 ]; do
       case "$1" in
-        -s|--subject) shift; subject="$1";;
-        -f|--from) shift; from="$1";;
-        *) body="$@"; break;;
+        -f|--from) shift; from=$(Helpers;rawurlencode "$1");;
+        *) body=$(Helpers;rawurlencode "$@"); break;;
       esac
       shift
     done
 
-    call_command="send/$(id)?token=$(email_token)"
-
-    if [ -n "$subject" ]; then
-      call_command="${call_command}&subject=${subject}"
-    fi
+    call_command="send/$(id)?token=$(email_token)&subject=${subject}"
 
     if [ -n "$from" ]; then
       call_command="${call_command}&from=${from}"
     fi
 
     if [ -n "$body" ]; then
-      # TODO url encode
       call "${call_command}&body=${body}"
     fi
   }
@@ -111,7 +171,49 @@ Baggage()
 
   usage()
   {
-    echo "Error: $1"
+    if [ -n "$1" ]; then
+      echo "$1"
+      echo ""
+    fi
+
+    cat <<EOF
+usage: baggage COMMAND [OPTS]
+
+Commands:
+
+    subscribe EMAIL
+
+      Subscribes email address.
+
+    stats
+
+      Retrieves stats for subscription.
+
+    rotate
+
+      Rotates tokens.
+
+    unsubscribe
+
+      Unsubscribes.
+
+    send SUBJECT [OPTS] [BODY]
+
+      Sends email. Options are:
+
+      -f --from       Email from name
+      -b --body       Email body. If not provided, body is read from STDIN.
+
+    ping
+
+      Basic connectivity test.
+
+    help
+
+      This help.
+
+      See https://github.com/baggage/app for full API docs
+EOF
   }
 }
 
@@ -120,11 +222,12 @@ Baggage;new
 command=$1; shift
 
 case "$command" in
-  'subscribe') Baggage;subscribe $@;;
-  'stats') Baggage;stats $@;;
-  'rotate') Baggage;rotate $@;;
-  'unsubscribe') Baggage;unsubscribe $@;;
-  'send') Baggage;send $@;;
-  'ping') Baggage;ping $@;;
+  'subscribe') Baggage;subscribe "$@";;
+  'stats') Baggage;stats "$@";;
+  'rotate') Baggage;rotate "$@";;
+  'unsubscribe') Baggage;unsubscribe "$@";;
+  'send') Baggage;send "$@";;
+  'ping') Baggage;ping "$@";;
+  'help') Baggage;usage;;
   *) Baggage;usage "unknown command";;
 esac
