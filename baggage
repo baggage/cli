@@ -167,7 +167,7 @@ Baggage()
     call_url="send/$(id)?token=$(email_token)&subject=${subject}"
 
     if [ -n "$from" ]; then
-      call_url="${call_command}&from=${from}"
+      call_url="${call_url}&from=${from}"
     fi
 
     if [ -n "$body" ]; then
