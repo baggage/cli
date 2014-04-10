@@ -86,6 +86,27 @@ Baggage()
     fi
   }
 
+  check_admin()
+  {
+    if [ -z "$BAGGAGE_ADMIN_TOKEN" ]; then
+      Helpers;fatal "This command is disabled"
+    fi
+  }
+
+  check_id()
+  {
+    if [ -z "$BAGGAGE_ID" ]; then
+      Helpers;fatal "BAGGAGE_ID not set"
+    fi
+  }
+
+  check_email()
+  {
+    if [ -z "$BAGGAGE_EMAIL_TOKEN" ]; then
+      Helpers;fatal "BAGGAGE_EMAIL_TOKEN not set"
+    fi
+  }
+
   id()
   {
     echo $BAGGAGE_ID
@@ -133,21 +154,29 @@ Baggage()
 
   stats()
   {
+    check_admin
+    check_id
     call "stats/$(id)?token=$(admin_token)"
   }
 
   rotate()
   {
+    check_admin
+    check_id
     call "rotate/$(id)?token=$(admin_token)"
   }
 
   unsubscribe()
   {
+    check_admin
+    check_id
     call "unsubscribe/$(id)?token=$(admin_token)"
   }
 
   send()
   {
+    check_id
+    check_email
     subject=$(Helpers;rawurlencode "$1"); shift
     from=""
     body=""
@@ -189,6 +218,12 @@ Baggage()
       echo ""
     fi
 
+    disabled=""
+    if [ -z "$BAGGAGE_ADMIN_TOKEN" ]; then
+      echo "INFO: No admin token found. Some commands are disabled."
+      disabled=" (DISABLED)"
+    fi
+
     cat <<EOF
 
 Usage: baggage COMMAND [OPTS]
@@ -199,15 +234,15 @@ Commands:
 
         Subscribes email address.
 
-    stats
+    stats${disabled}
 
        Retrieves stats for subscription.
 
-    rotate
+    rotate${disabled}
 
        Rotates tokens.
 
-    unsubscribe
+    unsubscribe${disabled}
 
        Unsubscribes.
 
