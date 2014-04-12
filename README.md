@@ -12,7 +12,7 @@ The tool is just a bash script, so it's very easy to install.
 
 For more convenience, move it to /usr/bin/
 
-    sudo mv baggage /usr/bin/
+    $ sudo mv baggage /usr/bin/
 
 # usage
 
