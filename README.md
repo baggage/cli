@@ -2,6 +2,8 @@
 
 Command line tool for the baggage.io web-to-email API.
 
+See http://baggage.io or https://github.com/baggage/app for details.
+
 # installation
 
 The tool is just a bash script, so it's very easy to install.
