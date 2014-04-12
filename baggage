@@ -159,6 +159,33 @@ Baggage()
     call "stats/$(id)?token=$(admin_token)"
   }
 
+  update()
+  {
+    check_admin
+    check_id
+    call_url="update/$(id)?token=$(admin_token)"
+    name=""
+    expires=""
+
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        -n|--name) shift; name=$(Helpers;rawurlencode "$1");;
+        -e|--expires) shift; expires=$(Helpers;rawurlencode "$1");;
+      esac
+      shift
+    done
+
+    if [ -n "$name" ]; then
+      call_url="${call_url}&name=${name}"
+    fi
+
+    if [ -n "$expires" ]; then
+      call_url="${call_url}&expires=${expires}"
+    fi
+
+    call "$call_url"
+  }
+
   rotate()
   {
     check_admin
@@ -211,6 +238,11 @@ Baggage()
     call "ping"
   }
 
+  version()
+  {
+    echo "baggage v1.2.0"
+  }
+
   usage()
   {
     if [ -n "$1" ]; then
@@ -238,6 +270,13 @@ Commands:
 
        Retrieves stats for subscription.
 
+    update [OPTS]${disabled}
+
+       Updates subscription. Options are:
+
+       -n --name       Descriptive name
+       -e --expires    Inactivity expiry time
+
     rotate${disabled}
 
        Rotates tokens.
@@ -251,11 +290,16 @@ Commands:
        Sends email. Options are:
 
        -f --from       Email from name.
-       -b --body       Email body. If not provided, body is read from STDIN.
+
+       If BODY is not provided, it is read from STDIN.
 
     ping
 
        Basic connectivity test.
+
+    version
+
+       Prints version
 
     help
 
@@ -275,9 +319,11 @@ case "$command" in
   'subscribe') Baggage;subscribe "$@";;
   'stats') Baggage;stats "$@";;
   'rotate') Baggage;rotate "$@";;
+  'update') Baggage;update "$@";;
   'unsubscribe') Baggage;unsubscribe "$@";;
   'send') Baggage;send "$@";;
   'ping') Baggage;ping "$@";;
+  'version') Baggage;version;;
   'help') Baggage;usage;;
   *) Baggage;usage "unknown command $command";;
 esac
