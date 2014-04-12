@@ -146,24 +146,9 @@ Baggage()
     cat | call "$url"
   }
 
-  subscribe()
+  name_expires_url()
   {
-    email="$1"
-    call "subscribe/${email}"
-  }
-
-  stats()
-  {
-    check_admin
-    check_id
-    call "stats/$(id)?token=$(admin_token)"
-  }
-
-  update()
-  {
-    check_admin
-    check_id
-    call_url="update/$(id)?token=$(admin_token)"
+    call_url="$1"; shift
     name=""
     expires=""
 
@@ -182,8 +167,27 @@ Baggage()
     if [ -n "$expires" ]; then
       call_url="${call_url}&expires=${expires}"
     fi
+    echo "$call_url"
+  }
 
-    call "$call_url"
+  subscribe()
+  {
+    email="$1"; shift
+    call $(name_expires_url "subscribe/${email}?" "$@")
+  }
+
+  stats()
+  {
+    check_admin
+    check_id
+    call "stats/$(id)?token=$(admin_token)"
+  }
+
+  update()
+  {
+    check_admin
+    check_id
+    call $(name_expires_url "update/$(id)?token=$(admin_token)?" "$@")
   }
 
   rotate()
@@ -240,7 +244,7 @@ Baggage()
 
   version()
   {
-    echo "baggage v1.2.0"
+    echo "baggage v1.3.0"
   }
 
   usage()
@@ -262,50 +266,53 @@ Usage: baggage COMMAND [OPTS]
 
 Commands:
 
-    subscribe EMAIL
+    subscribe EMAIL [OPTS]
 
-        Subscribes email address.
+        Subscribes email address. Options are:
+
+        -n --name       Descriptive name
+        -e --expires    Inactivity expiry time
 
     stats${disabled}
 
-       Retrieves stats for subscription.
+        Retrieves stats for subscription.
 
     update [OPTS]${disabled}
 
-       Updates subscription. Options are:
+        Updates subscription. Options are:
 
-       -n --name       Descriptive name
-       -e --expires    Inactivity expiry time
+        -n --name       Descriptive name
+        -e --expires    Inactivity expiry time
 
     rotate${disabled}
 
-       Rotates tokens.
+        Rotates tokens.
 
     unsubscribe${disabled}
 
-       Unsubscribes.
+        Unsubscribes.
 
     send SUBJECT [OPTS] [BODY]
 
-       Sends email. Options are:
+        Sends email. Options are:
 
-       -f --from       Email from name.
+        -f --from       Email from name
 
-       If BODY is not provided, it is read from STDIN.
+        If BODY is not provided, it is read from STDIN.
 
     ping
 
-       Basic connectivity test.
+        Basic connectivity test.
 
     version
 
-       Prints version
+        Prints version
 
     help
 
-       This help.
+        This help.
 
-       See https://github.com/baggage/app for full API docs
+        See https://github.com/baggage/app for full API docs
 
 EOF
   }
