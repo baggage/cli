@@ -271,7 +271,7 @@ Commands:
         Subscribes email address. Options are:
 
         -n --name       Descriptive name
-        -e --expires    Inactivity expiry time
+        -e --expires    Inactivity expiry time in days
 
     stats${disabled}
 
@@ -282,7 +282,7 @@ Commands:
         Updates subscription. Options are:
 
         -n --name       Descriptive name
-        -e --expires    Inactivity expiry time
+        -e --expires    Inactivity expiry time in days
 
     rotate${disabled}
 
