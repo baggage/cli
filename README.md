@@ -27,7 +27,7 @@ For more convenience, move it to /usr/bin/
             Subscribes email address. Options are:
 
             -n --name       Descriptive name
-            -e --expires    Inactivity expiry time
+            -e --expires    Inactivity expiry time in days
 
         stats
 
@@ -38,7 +38,7 @@ For more convenience, move it to /usr/bin/
             Updates subscription. Options are:
 
             -n --name       Descriptive name
-            -e --expires    Inactivity expiry time
+            -e --expires    Inactivity expiry time in days
 
         rotate
 
