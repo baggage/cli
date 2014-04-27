@@ -70,6 +70,18 @@ For more convenience, move it to /usr/bin/
 
             See https://github.com/baggage/app for full API docs
 
+# configuration
+
+By default, the baggage cli tool sources the file `$HOME/.baggage`. This file sets the id and tokens as per the subscription email:
+
+    $ touch ~/.baggage && chmod 0600 ~/.baggage && cat <<EOF > ~/.baggage
+    BAGGAGE_ID=e098cde48b3564c0a83eaad6b37b0da0
+    BAGGAGE_EMAIL_TOKEN=fee598d5942add552e561c00ab79e5b15258ff8277161d1ed028227c43fd00bc
+    EOF
+
+You can specify an alternative file by override the `BAGGAGE_CONF` variable on the command line:
+
+    $ BAGGAGE_CONF=/tmp/baggage-dev baggage send "hello" "world"
 
 # contributing
 
